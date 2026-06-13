@@ -1,0 +1,40 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+
+# uv cache
+.uv-cache/
+
+# Pytest cache
+.pytest_cache/
+
+# Generated pipeline outputs
+outputs/
+
+# Presentation and report files bundled outside the repo
+*.pptx
+*.pdf
+
+# Windows metadata
+desktop.ini
+Thumbs.db
+
+# OS metadata
+.DS_Store
+
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment variable files
+.env
+.env.*
