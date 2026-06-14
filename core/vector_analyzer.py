@@ -52,6 +52,7 @@ class VectorAnalyzer:
             return self._buildings
 
         try:
+            # pyrefly: ignore [missing-import]
             import osmnx as ox
         except ImportError as exc:
             raise ImportError("osmnx not installed. Run: uv pip install osmnx") from exc
@@ -110,6 +111,7 @@ class VectorAnalyzer:
 
         try:
             import geopandas as gpd
+            # pyrefly: ignore [missing-import]
             import osmnx as ox
         except ImportError as exc:
             raise ImportError("osmnx/geopandas not installed. Run: uv pip install osmnx geopandas") from exc
@@ -185,6 +187,7 @@ class VectorAnalyzer:
         """
         Count buildings whose centroid sits on slope >= threshold.
         """
+        # pyrefly: ignore [missing-import]
         import rasterio
 
         buildings = self.fetch_buildings()
@@ -310,6 +313,7 @@ class VectorAnalyzer:
         location or centroid. This is a transparent exposure approximation, not
         a replacement for a detailed engineering survey.
         """
+        # pyrefly: ignore [missing-import]
         import rasterio
 
         infrastructure = self.fetch_infrastructure()

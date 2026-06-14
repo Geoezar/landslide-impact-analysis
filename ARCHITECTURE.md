@@ -13,7 +13,7 @@ Google Earth Engine DEM products
   -> core/vector_analyzer.py + OpenStreetMap
   -> outputs/vector/*.gpkg
   -> core/visualizer.py and core/reporter.py
-  -> outputs/report/*, outputs/maps/*, outputs/presentation/presentation_script.md
+  -> outputs/report/*, outputs/maps/*
 ```
 
 ## Modules
@@ -60,10 +60,6 @@ Creates:
 - LaTeX source, references, figures, tables, compile notes, and literature notes.
 
 The report explains every included figure and table. The reference study is discussed as context, not inserted as a fake pipeline row.
-
-### `core/talk_script.py`
-
-Creates only `outputs/presentation/presentation_script.md`. It does not create a deck source or visual package.
 
 ## Scientific Guardrails
 

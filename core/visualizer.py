@@ -597,6 +597,7 @@ class Visualizer:
 
     @staticmethod
     def _read_raster(path: Path) -> tuple[np.ndarray, dict[str, Any], list[float]]:
+        # pyrefly: ignore [missing-import]
         import rasterio
 
         with rasterio.open(path) as src:
@@ -616,6 +617,7 @@ class Visualizer:
 
     @staticmethod
     def _read_rgb_raster(path: Path) -> tuple[np.ndarray, list[float]]:
+        # pyrefly: ignore [missing-import]
         import rasterio
 
         with rasterio.open(path) as src:
@@ -839,7 +841,9 @@ class Visualizer:
         if out_path.exists() and out_path.stat().st_size > 0:
             return out_path
         try:
+            # pyrefly: ignore [missing-import]
             import ee
+            # pyrefly: ignore [missing-import]
             import geemap
 
             try:

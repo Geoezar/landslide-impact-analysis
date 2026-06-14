@@ -9,13 +9,33 @@ __pycache__/
 # uv cache
 .uv-cache/
 
+# Local request/download cache
+cache/
+
 # Pytest cache
 .pytest_cache/
 
 # Generated pipeline outputs
 outputs/
 
-# Presentation and report files bundled outside the repo
+# Generated geospatial artifacts
+*.tif
+*.tiff
+*.tfw
+*.ovr
+*.aux.xml
+*.gpkg
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+
+# Generated archives and logs files
+*.zip
+*.log
+
+# Presentation and report files
 *.pptx
 *.pdf
 
@@ -29,6 +49,7 @@ Thumbs.db
 # Editor directories and files
 .idea/
 .vscode/
+.ipynb_checkpoints/
 *.suo
 *.ntvs*
 *.njsproj
