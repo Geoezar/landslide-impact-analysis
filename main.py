@@ -444,17 +444,6 @@ def run_pipeline() -> None:
         _zip_directory(Path(latex_dir), Path(latex_zip))
     report_outputs.update(package_outputs)
 
-    from core.talk_script import TalkScriptBuilder
-
-    script_builder = TalkScriptBuilder(
-        output_dir=OUTPUT_DIR / "presentation",
-        summary_rows=rpt.last_rows,
-        runtime_rows=runtime_rows,
-        report_outputs=report_outputs,
-        visual_outputs=visual_outputs,
-    )
-    script_outputs = script_builder.generate()
-    report_outputs.update(script_outputs)
     log.info("[PHASE 4] Complete. See %s", OUTPUT_DIR / "report")
 
     log.info("=" * 70)
