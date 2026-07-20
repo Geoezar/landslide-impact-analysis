@@ -33,6 +33,7 @@ class Visualizer:
         output_dir: Path,
         report_dir: Path,
         bbox: dict[str, float] | None = None,
+        gee_project: str | None = None,
     ) -> None:
         self.dem_catalogue = dem_catalogue
         self.dem_paths = {key: Path(value) for key, value in dem_paths.items()}
@@ -41,6 +42,7 @@ class Visualizer:
         self.output_dir = Path(output_dir)
         self.report_dir = Path(report_dir)
         self.bbox = bbox
+        self.gee_project = gee_project
         self.report_maps_dir = self.output_dir / "report"
         self.verification_dir = self.output_dir / "verification"
         self.report_maps_dir.mkdir(parents=True, exist_ok=True)
@@ -844,6 +846,9 @@ class Visualizer:
     def _sentinel_context_path(self) -> Path | None:
         if not self.bbox:
             return None
+        if not self.gee_project:
+            log.warning("No Earth Engine project supplied; using hillshade context.")
+            return None
         out_path = self.report_maps_dir / "sentinel2_true_color_context.tif"
         if out_path.exists() and out_path.stat().st_size > 0:
             return out_path
@@ -853,10 +858,7 @@ class Visualizer:
             # pyrefly: ignore [missing-import]
             import geemap
 
-            try:
-                ee.Initialize(project="geoe431-hazar")
-            except Exception:
-                ee.Initialize()
+            ee.Initialize(project=self.gee_project)
 
             roi = ee.Geometry.Rectangle(
                 [self.bbox["west"], self.bbox["south"], self.bbox["east"], self.bbox["north"]]

@@ -24,6 +24,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import os
 import re
 import shutil
 import sys
@@ -38,6 +39,17 @@ from typing import Any
 # Project-wide configuration -------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
+
+
+def _require_gee_project() -> str:
+    """Read the caller's Earth Engine project without embedding an account ID."""
+    project = os.environ.get("EE_PROJECT", "").strip()
+    if not project:
+        raise RuntimeError(
+            "EE_PROJECT is required. Set it to your own Google Cloud project ID "
+            "before running the pipeline."
+        )
+    return project
 
 # Devrek study area - WGS84 (EPSG:4326)
 # Source supplied by the user as DMS coordinates, converted to decimal degrees.
@@ -355,6 +367,7 @@ def run_pipeline() -> None:
     Phase 3 - Vector analysis: OSM buildings plus centroid slope/aspect sampling.
     Phase 4 - Reporting: CSV, figures, maps, audit files, and LaTeX package.
     """
+    gee_project = _require_gee_project()
     _prepare_output_tree()
     _configure_logging()
     runtime_rows: list[dict[str, Any]] = []
@@ -382,6 +395,7 @@ def run_pipeline() -> None:
         bbox=DEVREK_BBOX_WGS84,
         dem_catalogue=DEM_CATALOGUE,
         output_dir=OUTPUT_DIR / "dem",
+        gee_project=gee_project,
     )
     dem_paths = fetcher.fetch_all()
     fetcher.validate(dem_paths)
@@ -459,6 +473,7 @@ def run_pipeline() -> None:
         output_dir=OUTPUT_DIR / "maps",
         report_dir=OUTPUT_DIR / "report",
         bbox=DEVREK_BBOX_WGS84,
+        gee_project=gee_project,
     )
     visual_outputs = visualizer.generate()
     runtime_rows.append(_phase_row("Phase 4 - Reporting and visualization", phase_start))

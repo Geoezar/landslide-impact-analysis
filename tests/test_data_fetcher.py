@@ -26,7 +26,12 @@ def _write_raster(path: Path, data: np.ndarray, nodata: float = -9999.0) -> Path
 
 
 def _fetcher(tmp_path: Path) -> DataFetcher:
-    return DataFetcher(bbox={}, dem_catalogue={}, output_dir=tmp_path)
+    return DataFetcher(
+        bbox={},
+        dem_catalogue={},
+        output_dir=tmp_path,
+        gee_project="test-project",
+    )
 
 
 def test_valid_raster_is_accepted(tmp_path):

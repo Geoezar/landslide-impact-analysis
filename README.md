@@ -138,7 +138,20 @@ Confirm installation:
 uv --version
 ```
 
-### 2. Authenticate with Google Earth Engine
+### 2. Configure Your Google Earth Engine Project
+
+Supply your own Google Cloud project ID at runtime. The repository does not
+contain or default to the maintainer's project identifier.
+
+```powershell
+$env:EE_PROJECT = "your-google-cloud-project-id"
+```
+
+`EE_PROJECT` is a project identifier, not an API key. Never commit API keys,
+OAuth client secrets, service-account JSON files, or Earth Engine credential
+files to this repository.
+
+### 3. Authenticate with Google Earth Engine
 
 Run once to store credentials locally:
 ```powershell
@@ -147,9 +160,11 @@ uv run --with earthengine-api python -c "import ee; ee.Authenticate()"
 
 A browser window opens for Google login. After approval, credentials are cached and reused automatically on subsequent runs.
 
-> **Note:** The GEE project ID is set to `geoe431-hazar` in `core/data_fetcher.py`. To use a different GEE project, change the `project` argument in `DataFetcher._init_gee`.
+Earth Engine stores its authentication state outside this repository through
+the official client workflow. The pipeline uses the `EE_PROJECT` value from
+the current process and never writes it into generated public manifests.
 
-### 3. Run the pipeline
+### 4. Run the pipeline
 
 ```powershell
 $env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'
@@ -158,7 +173,7 @@ uv run python main.py
 
 The first run takes longer because uv resolves and caches all packages. Subsequent runs use the local `.uv-cache`.
 
-### 4. Run the test suite
+### 5. Run the test suite
 
 ```powershell
 $env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'

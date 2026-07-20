@@ -34,10 +34,17 @@ class DataFetcher:
         Directory where GeoTIFF files will be saved.
     """
 
-    def __init__(self, bbox: dict, dem_catalogue: dict, output_dir: Path):
+    def __init__(
+        self,
+        bbox: dict,
+        dem_catalogue: dict,
+        output_dir: Path,
+        gee_project: str,
+    ):
         self.bbox = bbox
         self.catalogue = dem_catalogue
         self.output_dir = Path(output_dir)
+        self.gee_project = gee_project
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._ee = None
 
@@ -77,12 +84,12 @@ class DataFetcher:
             ) from exc
 
         try:
-            ee.Initialize(project="geoe431-hazar")
+            ee.Initialize(project=self.gee_project)
             log.info("GEE initialised with existing credentials.")
         except Exception:
             log.warning("No cached credentials found. Launching browser auth ...")
             ee.Authenticate()
-            ee.Initialize(project="geoe431-hazar")
+            ee.Initialize(project=self.gee_project)
             log.info("GEE authentication successful.")
 
     def _build_roi(self):

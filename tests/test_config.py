@@ -16,6 +16,32 @@ def test_project_uses_local_outputs_and_correct_bbox():
     }
 
 
+def test_gee_project_must_be_supplied_by_the_caller(monkeypatch):
+    monkeypatch.delenv("EE_PROJECT", raising=False)
+    with pytest.raises(RuntimeError, match="EE_PROJECT is required"):
+        main._require_gee_project()
+
+    monkeypatch.setenv("EE_PROJECT", "user-owned-project")
+    assert main._require_gee_project() == "user-owned-project"
+
+
+def test_repository_does_not_hardcode_an_earth_engine_project():
+    public_files = [
+        main.PROJECT_ROOT / "main.py",
+        main.PROJECT_ROOT / "core" / "data_fetcher.py",
+        main.PROJECT_ROOT / "core" / "visualizer.py",
+        main.PROJECT_ROOT / "README.md",
+    ]
+
+    forbidden_initializers = (
+        'ee.Initialize(project="',
+        "ee.Initialize(project='",
+    )
+    for path in public_files:
+        content = path.read_text(encoding="utf-8")
+        assert not any(marker in content for marker in forbidden_initializers)
+
+
 def test_active_dem_catalogue_is_processing_lineage_set():
     assert list(main.DEM_CATALOGUE) == [
         "SRTM_30m",
