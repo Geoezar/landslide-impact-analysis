@@ -1,11 +1,19 @@
 import csv
+import inspect
 import re
 import zipfile
 from pathlib import Path
 
 import numpy as np
 
+import main
 from core.reporter import Reporter
+
+
+def test_combined_public_figure_has_osm_attribution():
+    source = inspect.getsource(Reporter._write_sensitivity_figure)
+
+    assert "© OpenStreetMap contributors" in source
 
 
 def test_reporter_generates_csv_and_png(tmp_path):
@@ -117,7 +125,7 @@ def test_reporter_uses_dem_keyed_rows_not_position(tmp_path):
     assert row_by_dem["NASADEM_30m"]["Buildings_AtRisk"] == 20
 
 
-def test_reporter_generates_latex_source_package(tmp_path):
+def test_reporter_generates_latex_source_package(tmp_path, monkeypatch):
     dem_catalogue = {
         "SRTM_30m": {"gsd_m": 30, "sensor_type": "Radar InSAR"},
     }
@@ -142,8 +150,13 @@ def test_reporter_generates_latex_source_package(tmp_path):
     runtime_csv.write_text("phase,seconds\nPhase 1,1.0\n", encoding="utf-8")
     inventory_csv = tmp_path / "output_inventory.csv"
     inventory_csv.write_text("relative_path,size_bytes\n", encoding="utf-8")
-    manifest_json = tmp_path / "run_manifest.json"
-    manifest_json.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(main, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(main, "OUTPUT_DIR", tmp_path / "outputs")
+    manifest_json = main._write_run_manifest(
+        runtime_rows=[],
+        report_outputs={"csv": outputs["csv"]},
+        visual_outputs={},
+    )
     map_index = tmp_path / "map_index.md"
     map_index.write_text("# maps\n", encoding="utf-8")
     infrastructure_csv = tmp_path / "infrastructure_exposure_summary.csv"
@@ -187,12 +200,16 @@ def test_reporter_generates_latex_source_package(tmp_path):
 
     assert package["latex_zip"].exists()
     assert package["latex_zip"].stat().st_size > 0
+    main._verify_manifest_in_zip(package["latex_zip"])
     with zipfile.ZipFile(package["latex_zip"]) as archive:
         names = set(archive.namelist())
+        packaged_manifest = archive.read("run_manifest.json").decode("utf-8")
     assert "main.tex" in names
     assert "references.bib" in names
     assert "tables/summary_table.csv" in names
     assert "tables/infrastructure_exposure_summary.csv" in names
+    for private_marker in ("C:\\Users\\", "/home/", "/Users/", "OneDrive", "Desktop"):
+        assert private_marker.lower() not in packaged_manifest.lower()
 
     forbidden = "".join(["12665", "-011-", "1196-4"])
     with zipfile.ZipFile(package["latex_zip"]) as archive:
@@ -214,6 +231,9 @@ def test_reporter_generates_latex_source_package(tmp_path):
     assert "beamer" not in main_tex.lower()
     assert re.search(r"\bslide\b", main_tex.lower()) is None
     assert "OSM completeness and sparsity bias in rural Turkish regions" in main_tex
+    assert "MIT" in main_tex
+    assert "Open Database License" in main_tex
+    assert "OpenStreetMap contributors" in main_tex
     assert "gorelick2017gee" in references
     assert "sentinel2gee" in references
     assert "zevenbergen1987" in references

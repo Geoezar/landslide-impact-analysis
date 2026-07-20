@@ -12,6 +12,11 @@ __pycache__/
 # Local request/download cache
 cache/
 
+# Incomplete or temporary downloads
+*.part
+*.part.tif
+*.tmp
+
 # Pytest cache
 .pytest_cache/
 

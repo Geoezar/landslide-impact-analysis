@@ -24,6 +24,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import re
 import shutil
 import sys
 import time
@@ -220,8 +221,8 @@ def _write_run_manifest(
     report_dir.mkdir(parents=True, exist_ok=True)
     manifest = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "project_root": str(PROJECT_ROOT),
-        "output_root": str(OUTPUT_DIR),
+        "project_root": ".",
+        "output_root": _repository_relative_path(OUTPUT_DIR),
         "research_question": (
             "How do cloud-based DEMs from different processing lineages for the same "
             "study area (SRTM, NASADEM, AW3D30) change topographic derivatives and "
@@ -241,15 +242,64 @@ def _write_run_manifest(
         ),
         "runtime_seconds": runtime_rows,
         "package_versions": _package_versions(),
-        "report_outputs": {key: str(value) for key, value in report_outputs.items()},
-        "visual_outputs": {
-            key: [str(item) for item in value] if isinstance(value, list) else str(value)
-            for key, value in visual_outputs.items()
-        },
+        "report_outputs": _serialize_artifact_paths(report_outputs),
+        "visual_outputs": _serialize_artifact_paths(visual_outputs),
     }
     path = report_dir / "run_manifest.json"
-    path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    text = json.dumps(manifest, indent=2)
+    _assert_public_manifest_safe(text)
+    path.write_text(text, encoding="utf-8")
     return path
+
+
+def _repository_relative_path(path: Path | str) -> str:
+    """Return a public, POSIX-style path relative to the repository root."""
+    candidate = Path(path).resolve()
+    root = PROJECT_ROOT.resolve()
+    try:
+        relative = candidate.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"Artifact path is outside the repository root: {path}") from exc
+    return relative.as_posix() or "."
+
+
+def _serialize_artifact_paths(value: Any) -> Any:
+    """Recursively preserve artifact structure while removing absolute paths."""
+    if isinstance(value, Path):
+        return _repository_relative_path(value)
+    if isinstance(value, dict):
+        return {key: _serialize_artifact_paths(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_serialize_artifact_paths(item) for item in value]
+    if isinstance(value, str) and Path(value).is_absolute():
+        return _repository_relative_path(value)
+    return value
+
+
+_PUBLIC_PATH_PATTERNS = (
+    re.compile(r"[A-Za-z]:[\\/]+Users[\\/]", re.IGNORECASE),
+    re.compile(r"/home/", re.IGNORECASE),
+    re.compile(r"/Users/", re.IGNORECASE),
+    re.compile(r"\bOneDrive\b", re.IGNORECASE),
+    re.compile(r"\bDesktop\b", re.IGNORECASE),
+)
+
+
+def _assert_public_manifest_safe(text: str) -> None:
+    """Reject manifest text that exposes a local user or desktop path."""
+    for pattern in _PUBLIC_PATH_PATTERNS:
+        if pattern.search(text):
+            raise ValueError(f"Public manifest contains a private path marker: {pattern.pattern}")
+
+
+def _verify_manifest_in_zip(zip_path: Path) -> None:
+    """Verify the manifest actually packaged into the final LaTeX archive."""
+    with zipfile.ZipFile(zip_path) as archive:
+        try:
+            manifest_text = archive.read("run_manifest.json").decode("utf-8")
+        except KeyError as exc:
+            raise ValueError("LaTeX ZIP is missing run_manifest.json") from exc
+    _assert_public_manifest_safe(manifest_text)
 
 
 def _first_osm_timestamp(results: dict[str, dict[str, Any]], key: str) -> str:
@@ -442,6 +492,7 @@ def run_pipeline() -> None:
     if latex_dir and latex_zip:
         shutil.copy2(inventory_path, Path(latex_dir) / "tables" / "output_inventory.csv")
         _zip_directory(Path(latex_dir), Path(latex_zip))
+        _verify_manifest_in_zip(Path(latex_zip))
     report_outputs.update(package_outputs)
 
     log.info("[PHASE 4] Complete. See %s", OUTPUT_DIR / "report")

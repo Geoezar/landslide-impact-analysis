@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -39,7 +40,9 @@ def test_safe_remove_refuses_paths_outside_output_root(tmp_path):
 
 
 def test_run_manifest_records_osm_timestamps(tmp_path, monkeypatch):
-    monkeypatch.setattr(main, "OUTPUT_DIR", tmp_path / "outputs")
+    project_root = tmp_path / "repo"
+    monkeypatch.setattr(main, "PROJECT_ROOT", project_root)
+    monkeypatch.setattr(main, "OUTPUT_DIR", project_root / "outputs")
     report_dir = main.OUTPUT_DIR / "report"
     report_dir.mkdir(parents=True)
 
@@ -62,3 +65,64 @@ def test_run_manifest_records_osm_timestamps(tmp_path, monkeypatch):
     assert "2026-05-12T10:00:00+00:00" in text
     assert "osm_infrastructure_extracted_at_utc" in text
     assert "2026-05-12T10:01:00+00:00" in text
+
+
+def test_run_manifest_serializes_nested_artifacts_as_repository_relative_paths(
+    tmp_path, monkeypatch
+):
+    project_root = tmp_path / "repo"
+    output_root = project_root / "outputs"
+    report_dir = output_root / "report"
+    map_dir = output_root / "maps" / "report"
+    report_dir.mkdir(parents=True)
+    map_dir.mkdir(parents=True)
+    summary = report_dir / "summary.csv"
+    figure = map_dir / "figure.png"
+
+    monkeypatch.setattr(main, "PROJECT_ROOT", project_root)
+    monkeypatch.setattr(main, "OUTPUT_DIR", output_root)
+
+    path = main._write_run_manifest(
+        runtime_rows=[],
+        report_outputs={"csv": summary, "nested": {"figures": [figure]}},
+        visual_outputs={"report_figures": [figure]},
+    )
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+
+    assert manifest["project_root"] == "."
+    assert manifest["output_root"] == "outputs"
+    assert manifest["report_outputs"] == {
+        "csv": "outputs/report/summary.csv",
+        "nested": {"figures": ["outputs/maps/report/figure.png"]},
+    }
+    assert manifest["visual_outputs"] == {
+        "report_figures": ["outputs/maps/report/figure.png"]
+    }
+
+
+def test_manifest_rejects_artifact_outside_repository(tmp_path, monkeypatch):
+    project_root = tmp_path / "repo"
+    output_root = project_root / "outputs"
+    (output_root / "report").mkdir(parents=True)
+    outside = tmp_path / "outside.txt"
+
+    monkeypatch.setattr(main, "PROJECT_ROOT", project_root)
+    monkeypatch.setattr(main, "OUTPUT_DIR", output_root)
+
+    with pytest.raises(ValueError, match="outside the repository root"):
+        main._write_run_manifest([], {"outside": outside}, {})
+
+
+@pytest.mark.parametrize(
+    "private_path",
+    [
+        r"C:\Users\person\project",
+        "/home/person/project",
+        "/Users/person/project",
+        r"D:\OneDrive\project",
+        r"D:\Desktop\project",
+    ],
+)
+def test_public_manifest_rejects_private_path_markers(private_path):
+    with pytest.raises(ValueError, match="private path marker"):
+        main._assert_public_manifest_safe(json.dumps({"path": private_path}))

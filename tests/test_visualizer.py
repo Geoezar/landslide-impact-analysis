@@ -90,3 +90,26 @@ def test_infrastructure_summary_omits_zero_only_utility_series():
 
     assert "include_utilities = any(value > 0 for value in utilities)" in source
     assert "if include_utilities and utility_x is not None" in source
+
+
+def test_public_attribution_is_scoped_to_data_used_by_each_figure():
+    helper_source = inspect.getsource(Visualizer._add_public_attribution)
+    overlay_source = inspect.getsource(Visualizer._plot_at_risk_overlay)
+    zoom_source = inspect.getsource(Visualizer._plot_cluster_zoom_panel)
+    verification_source = inspect.getsource(Visualizer._plot_elevation_hillshade)
+    dem_only_source = inspect.getsource(Visualizer._plot_profile_curvature_chart)
+
+    assert "© OpenStreetMap contributors" in helper_source
+    assert "Copernicus Sentinel-2 / ESA" in helper_source
+    assert "_add_public_attribution(fig, osm=True)" in overlay_source
+    assert "sentinel=rgb_context is not None" in zoom_source
+    for method in (
+        Visualizer._plot_exposure_cluster_overview,
+        Visualizer._plot_dem_exposure_agreement_matrix,
+        Visualizer._plot_infrastructure_summary,
+        Visualizer._plot_slope_histogram,
+        Visualizer._plot_infrastructure_risk_chart,
+    ):
+        assert "_add_public_attribution(fig, osm=True)" in inspect.getsource(method)
+    assert "_add_public_attribution" not in verification_source
+    assert "_add_public_attribution" not in dem_only_source

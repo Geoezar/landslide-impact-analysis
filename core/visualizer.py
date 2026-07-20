@@ -256,7 +256,8 @@ class Visualizer:
         ax.set_xlabel("Easting (m)")
         ax.set_ylabel("Northing (m)")
         fig.colorbar(image, ax=ax, shrink=0.82, label="Slope (deg)")
-        fig.tight_layout()
+        self._add_public_attribution(fig, osm=True)
+        fig.tight_layout(rect=[0, 0.035, 1, 1])
         fig.savefig(out_path, dpi=300)
         plt.close(fig)
         log.info("  Report map: %s", out_path.name)
@@ -317,7 +318,8 @@ class Visualizer:
         handles, labels = ax.get_legend_handles_labels()
         if handles:
             ax.legend(handles, labels, loc="lower right", fontsize=8, framealpha=0.88)
-        fig.tight_layout()
+        self._add_public_attribution(fig, osm=True)
+        fig.tight_layout(rect=[0, 0.035, 1, 1])
         out_path = self.report_maps_dir / "exposure_cluster_overview.png"
         fig.savefig(out_path, dpi=300)
         plt.close(fig)
@@ -387,7 +389,8 @@ class Visualizer:
         if handles:
             fig.legend(handles, labels, loc="lower center", ncol=3, frameon=False)
         fig.suptitle("Zoomed Exposure Clusters with Sentinel-2 or Hillshade Context", fontweight="bold")
-        fig.tight_layout(rect=[0, 0.05, 1, 0.96])
+        self._add_public_attribution(fig, osm=True, sentinel=rgb_context is not None)
+        fig.tight_layout(rect=[0, 0.07, 1, 0.96])
         out_path = self.report_maps_dir / "exposure_cluster_zoom_panel.png"
         fig.savefig(out_path, dpi=300)
         plt.close(fig)
@@ -423,7 +426,8 @@ class Visualizer:
                 ax.text(col, row, f"{int(matrix[row, col])}", ha="center", va="center", color="#111111")
         fig.colorbar(image, ax=ax, shrink=0.82, label="At-risk building count")
         ax.set_title("DEM Agreement and Divergence by Exposure Cluster")
-        fig.tight_layout()
+        self._add_public_attribution(fig, osm=True)
+        fig.tight_layout(rect=[0, 0.035, 1, 1])
         out_path = self.report_maps_dir / "dem_exposure_agreement_matrix.png"
         fig.savefig(out_path, dpi=300)
         plt.close(fig)
@@ -482,7 +486,8 @@ class Visualizer:
         handles_2, labels_2 = ax2.get_legend_handles_labels()
         ax.legend(handles_1 + handles_2, labels_1 + labels_2, loc="upper left")
         ax.grid(axis="y", alpha=0.2)
-        fig.tight_layout()
+        self._add_public_attribution(fig, osm=True)
+        fig.tight_layout(rect=[0, 0.035, 1, 1])
         out_path = self.report_maps_dir / "infrastructure_exposure_summary.png"
         fig.savefig(out_path, dpi=300)
         plt.close(fig)
@@ -526,7 +531,8 @@ class Visualizer:
         )
         ax.grid(alpha=0.2)
         ax.legend(fontsize=9)
-        fig.tight_layout()
+        self._add_public_attribution(fig, osm=True)
+        fig.tight_layout(rect=[0, 0.035, 1, 1])
         fig.savefig(out_path, dpi=300)
         plt.close(fig)
         return out_path
@@ -584,7 +590,8 @@ class Visualizer:
         ax.set_title("Infrastructure at Landslide Risk by DEM Product")
         ax.grid(axis="y", alpha=0.22)
         ax.legend(fontsize=9)
-        fig.tight_layout()
+        self._add_public_attribution(fig, osm=True)
+        fig.tight_layout(rect=[0, 0.035, 1, 1])
         fig.savefig(out_path, dpi=300)
         plt.close(fig)
         return out_path
@@ -923,6 +930,30 @@ class Visualizer:
         fig.savefig(out_path, dpi=300)
         plt.close(fig)
         return out_path
+
+    @staticmethod
+    def _add_public_attribution(
+        fig: Any,
+        *,
+        osm: bool = False,
+        sentinel: bool = False,
+    ) -> None:
+        """Add compact source notes only to public figures that use those data."""
+        notes = []
+        if osm:
+            notes.append("© OpenStreetMap contributors")
+        if sentinel:
+            notes.append("Copernicus Sentinel-2 / ESA")
+        if notes:
+            fig.text(
+                0.99,
+                0.01,
+                " | ".join(notes),
+                ha="right",
+                va="bottom",
+                fontsize=7,
+                color="#444444",
+            )
 
     @staticmethod
     def _dem_colors() -> dict[str, str]:

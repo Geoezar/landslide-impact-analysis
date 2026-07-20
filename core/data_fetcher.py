@@ -134,32 +134,44 @@ class DataFetcher:
 
     def _download(self, image, out_path: Path, scale: int, roi) -> None:
         """
-        Uses geemap.ee_export_image for direct local download, with a URL
-        fallback if geemap is unavailable.
-        """
-        if out_path.exists():
-            log.info("  Overwriting existing file: %s", out_path.name)
-            out_path.unlink()
+        Download to a temporary TIFF, validate it, then replace the final file.
 
+        A failed or partial download can never become the final artifact, and
+        an existing valid final TIFF remains untouched until its replacement
+        has passed validation.
+        """
+        temporary_path = out_path.with_name(f"{out_path.stem}.part{out_path.suffix}")
+        if temporary_path.exists():
+            temporary_path.unlink()
+
+        try:
+            self._export_to_path(image, temporary_path, scale, roi)
+            self._validate_raster(temporary_path)
+            temporary_path.replace(out_path)
+            log.info("  Validated and saved: %s", out_path.name)
+        except Exception as exc:
+            if temporary_path.exists():
+                temporary_path.unlink()
+            log.error("Download failed for %s: %s", out_path.name, exc)
+            raise
+
+    def _export_to_path(self, image, target_path: Path, scale: int, roi) -> None:
+        """Export through geemap, with a URL fallback when geemap is absent."""
         try:
             import geemap
 
             geemap.ee_export_image(
                 image,
-                filename=str(out_path),
+                filename=str(target_path),
                 scale=scale,
                 region=roi,
                 file_per_band=False,
             )
-            log.info("  Downloaded via geemap: %s", out_path.name)
+            log.info("  Downloaded via geemap: %s", target_path.name)
 
         except ImportError:
             log.warning("geemap not found. Falling back to URL download ...")
-            self._download_via_url(image, out_path, scale, roi)
-
-        except Exception as exc:
-            log.error("Download failed for %s: %s", out_path.name, exc)
-            raise
+            self._download_via_url(image, target_path, scale, roi)
 
     def _download_via_url(self, image, out_path: Path, scale: int, roi) -> None:
         """Fallback download for small GeoTIFF exports."""
@@ -182,31 +194,45 @@ class DataFetcher:
                 handle.write(chunk)
         log.info("  Saved: %s (%.1f MB)", out_path.name, out_path.stat().st_size / 1e6)
 
-    def validate(self, dem_paths: dict) -> bool:
-        """
-        Opens each GeoTIFF and checks basic integrity.
-        """
+    @staticmethod
+    def _validate_raster(path: Path) -> tuple[float, float, object, tuple[int, int]]:
+        """Validate a raster and return finite elevation bounds and metadata."""
         try:
             import numpy as np
             import rasterio
-        except ImportError:
-            log.warning("rasterio/numpy not available for validation.")
-            return True
+        except ImportError as exc:
+            raise RuntimeError("rasterio and numpy are required for DEM validation") from exc
 
-        all_ok = True
-        for dem_name, path in dem_paths.items():
-            if not path.exists():
-                log.error("MISSING: %s", path)
-                all_ok = False
-                continue
+        path = Path(path)
+        if not path.exists() or path.stat().st_size == 0:
+            raise ValueError(f"DEM is missing or empty: {path}")
+
+        try:
             with rasterio.open(path) as src:
+                if src.count < 1 or src.width < 1 or src.height < 1:
+                    raise ValueError(f"DEM has invalid dimensions or no raster band: {path}")
                 data = src.read(1, masked=True)
-                log.info(
-                    "  [%s] CRS=%s | Shape=%s | Elev: min=%.0fm max=%.0fm",
-                    dem_name,
-                    src.crs,
-                    src.shape,
-                    float(np.ma.min(data)),
-                    float(np.ma.max(data)),
-                )
-        return all_ok
+                valid = np.asarray(data.compressed(), dtype=np.float64)
+                valid = valid[np.isfinite(valid)]
+                if valid.size == 0:
+                    raise ValueError(f"DEM contains no finite, non-NoData pixels: {path}")
+                return float(valid.min()), float(valid.max()), src.crs, src.shape
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise ValueError(f"DEM is not a valid readable raster: {path}") from exc
+
+    def validate(self, dem_paths: dict) -> bool:
+        """Fail closed unless every expected GeoTIFF passes integrity checks."""
+
+        for dem_name, path in dem_paths.items():
+            minimum, maximum, crs, shape = self._validate_raster(Path(path))
+            log.info(
+                "  [%s] CRS=%s | Shape=%s | Elev: min=%.0fm max=%.0fm",
+                dem_name,
+                crs,
+                shape,
+                minimum,
+                maximum,
+            )
+        return True

@@ -306,6 +306,15 @@ class Reporter:
             fontsize=16,
             fontweight="bold",
         )
+        fig.text(
+            0.99,
+            0.01,
+            "© OpenStreetMap contributors",
+            ha="right",
+            va="bottom",
+            fontsize=7,
+            color="#444444",
+        )
 
         fig_path = self.output_dir / "sensitivity_report.png"
         fig.savefig(fig_path, dpi=300)
@@ -583,6 +592,17 @@ centroid sampling. Road exposure is evaluated by 30 m interval midpoint sampling
 after reprojection to EPSG:32636, so reported lengths are meter-based. Fourth,
 Matplotlib writes no-GIS maps, charts, tables, audit files, and this LaTeX
 source package \cite{{hunter2007matplotlib}}.
+
+\subsection{{Code License and External Data Boundary}}
+The original project code and documentation are distributed under the MIT
+License. That code license does not relicense third-party data or derived data
+rights. OpenStreetMap infrastructure remains subject to the Open Data Commons
+Open Database License and is attributed as ``\copyright\ OpenStreetMap contributors'';
+full terms are available at
+\url{{https://www.openstreetmap.org/copyright}}. SRTM and NASADEM are credited
+to NASA/USGS/JPL-Caltech, AW3D30 to JAXA, and any Sentinel-2 context to
+Copernicus Sentinel-2 / ESA. The corresponding provider and catalog references
+are included in the bibliography.
 
 \section{{Results}}
 \subsection{{Pipeline Summary Table}}

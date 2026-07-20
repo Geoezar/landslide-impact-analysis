@@ -196,6 +196,31 @@ All outputs, figures, and the LaTeX report are generated automatically from thes
 
 ---
 
+## License and External Data
+
+The original source code and project documentation in this repository are
+licensed under the [MIT License](LICENSE). This code license does **not** grant
+rights to third-party datasets, downloaded imagery, OpenStreetMap data, or
+derived data products. Those materials remain subject to their respective
+provider terms.
+
+| Source | Role | Attribution and terms |
+|---|---|---|
+| OpenStreetMap | Buildings, roads, utilities, and public facilities | © OpenStreetMap contributors; data available under the [Open Data Commons Open Database License](https://www.openstreetmap.org/copyright) |
+| SRTM | Baseline DEM | NASA / USGS / JPL-Caltech; [Earth Engine dataset page](https://developers.google.com/earth-engine/datasets/catalog/USGS_SRTMGL1_003) |
+| NASADEM | Reprocessed SRTM-family DEM | NASA / USGS / JPL-Caltech; [Earth Engine dataset page](https://developers.google.com/earth-engine/datasets/catalog/NASA_NASADEM_HGT_001) |
+| AW3D30 | Optical-stereo DSM | AW3D30 (JAXA); [Earth Engine dataset page](https://developers.google.com/earth-engine/datasets/catalog/JAXA_ALOS_AW3D30_V4_1) and [JAXA data terms](https://earth.jaxa.jp/en/data/policy/) |
+| Sentinel-2 | Optional true-color context | Copernicus Sentinel-2 / ESA; [Earth Engine dataset page](https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED) |
+| Google Earth Engine | Cloud processing platform | Google Earth Engine platform and dataset catalogue |
+
+Generated OSM-derived public figures carry a compact
+`© OpenStreetMap contributors` notice. Figures that actually use Sentinel-2
+context carry a compact `Copernicus Sentinel-2 / ESA` source note. DEM-only
+figures keep source information in this README and in report captions or
+metadata instead of adding long legal footers to internal verification maps.
+
+---
+
 ## References
 
 - Yilmaz, C., Topal, T., & Suzen, M. L. (2012). GIS-based landslide susceptibility mapping using bivariate statistical analysis in Devrek (Zonguldak-Turkey). *Environmental Earth Sciences*, 65, 2161–2178.
